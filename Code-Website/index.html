@@ -1,12 +1,98 @@
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>DHT11</title>
+    <script type="text/javascript" src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
 </head>
 <body>
+    <h1> 1. THONG SO NHIET DO, DO AM</h1><br>
+    <h2> Temprature</h2> <input type="text" size="6" id="temp">°C<br>
+    <h2> Humidity</h2> <input type="text" size="6" id="humd">%<br>
+    <h1> 2. DO THI</h1><br>
+    <div id="ChartContainer" style="height: 300px; width:80%;"></div>
+    <script type="text/javascript">
+        function httpGetAsync(theUrl, callback) {
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.onreadystatechange = function() {
+                if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+                    callback(JSON.parse(xmlHttp.responseText));
+            }
+            xmlHttp.open("GET", theUrl, true); // true for asynchronous
+            xmlHttp.send(null);
+        }
 
-    <h1>Ola</h1>
-    
+        window.onload = function() {
+            var dataTemp = [];
+            var dataHumd = [];
+
+            var Chart = new CanvasJS.Chart("ChartContainer", {
+                zoomEnabled: true,
+                title: {
+                    text: "Temprature & Humidity"
+                },
+                toolTip: {
+                    shared: true
+                },
+                axisX: {
+                    title: "chart updates every 2 secs"
+                },
+                axisY: {
+                    title: "xd"
+                },
+                data: [{
+                        type: "line",
+                        xValueType: "dateTime",
+                        showInLegend: true,
+                        name: "temp",
+                        dataPoints: dataTemp
+                    },
+                    {
+                        type: "line",
+                        xValueType: "dateTime",
+                        showInLegend: true,
+                        name: "humd",
+                        dataPoints: dataHumd
+                    }
+                ]
+            });
+
+            var updateInterval = 500; // 2 seconds
+            var time = new Date();
+
+            var updateChart = function() {
+                httpGetAsync('/get', function(data) {
+                    console.log('Server response:', data); 
+                    if (data.length > 0) {
+                        // Update the input fields with the latest data
+                        document.getElementById("temp").value = data[data.length - 1].temp;
+                        document.getElementById("humd").value = data[data.length - 1].humd;
+
+                        // Log the data to the console
+                        console.log(data);
+
+                        // Update the chart with new data points
+                        data.forEach(function(point) {
+                            var time = new Date(point.time);
+                            dataTemp.push({
+                                x: time.getTime(),
+                                y: parseFloat(point.temp)
+                            });
+                            dataHumd.push({
+                                x: time.getTime(),
+                                y: parseFloat(point.humd)
+                            });
+                        });
+
+                        // Render the chart
+                        Chart.render();
+                    }
+                });
+            };
+
+            updateChart(); // Initial call
+            setInterval(updateChart, updateInterval); // Update the chart every 2 seconds
+        }
+    </script>
 </body>
 </html>
